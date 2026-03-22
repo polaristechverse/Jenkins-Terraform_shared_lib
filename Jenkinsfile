@@ -2,14 +2,15 @@ pipeline {
     agent none
      parameters {
         choice(name: 'Infra_Setup', choices: ['yes', 'no'], description: 'Choose an action')
+        choice(name: 'APP_Setup', choices: ['yes', 'no'], description: 'Choose an action')
         choice(name: 'Terraform_Destory', choices: ['yes', 'no'], description: 'Choose an action')
         choice(name: 'Terraform_Apply', choices: ['yes', 'no'], description: 'Choose an action')
      }
-     stages {
+    stages {
         stage('Infra_Setup'){
              when {
-        expression { return params.Infra_Setup == 'yes' }
-    }
+                expression { return params.Infra_Setup == 'yes' }
+             }
              agent { label 'Dev' }
              stages{
                 stage('Software_Check'){
@@ -43,5 +44,35 @@ pipeline {
                 }
              }
         }
-     }
+        stage('App_Setup'){
+            when {
+                expression { return params.APP_Setup == 'yes' }
+             }
+            agent { label 'App' }
+            stages{
+                stage('Software_Check'){
+                    steps{
+                        sh 'mvn -version'
+                        sh 'java -version'
+                    }
+                }
+                stage('Build_Packeage'){
+                    steps {
+                        sh 'mvn clean package -DskipTests'
+                        sh 'sudo cp $WORKSPACE/target/demo-0.0.1-SNAPSHOT.jar /opt/app.jar'
+                    }
+                }
+                stage('Run_App'){
+                    steps{
+                        sh '''
+                            sudo cp $WORKSPACE/app.service /etc/systemd/system/app.service
+                            sudo systemctl daemon-reload
+                            sudo systemctl enable app.service
+                            sudo systemctl restart app.service
+                        '''
+                    }
+                }
+            }
+        }
+    }
 }
