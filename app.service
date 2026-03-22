@@ -1,0 +1,17 @@
+[Unit]
+Description=API Jar Service
+After=network.target
+
+[Service]
+# User running the application (e.g., jenkins or your app user)
+User=root
+# Directory where api.jar is located
+WorkingDirectory=/opt
+ExecStart=/usr/bin/java -jar /opt/app.jar
+ExecStop=/usr/bin/kill -TERM $MAINPID
+SuccessExitStatus=143
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
